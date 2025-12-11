@@ -9,7 +9,6 @@
         "api",
         "relations",
         "composite-key",
-        "n+1-prevention",
         "eager-loading"
     ],
     "authors": [
