@@ -28,6 +28,145 @@
 composer require carlin/laravel-api-relations
 ```
 
+## 为什么使用这个包？
+
+### 使用前：传统方式 ❌
+
+在没有这个包的情况下，通常需要通过 Service 类来获取和附加 API 数据：
+
+```php
+// UserService.php
+class UserService
+{
+    public function getUserWithProfile($userId)
+    {
+        $user = User::find($userId);
+        
+        // 从外部 API 获取用户资料
+        $response = Http::post('https://api.example.com/profiles', [
+            'user_ids' => [$userId]
+        ]);
+        $profiles = $response->json();
+        $user->profile = $profiles[0] ?? null;
+        
+        return $user;
+    }
+    
+    public function getUsersWithProfiles($userIds)
+    {
+        $users = User::whereIn('id', $userIds)->get();
+        
+        // 批量获取以避免 N+1
+        $response = Http::post('https://api.example.com/profiles', [
+            'user_ids' => $userIds
+        ]);
+        $profiles = collect($response->json())->keyBy('user_id');
+        
+        // 手动将资料附加到用户
+        foreach ($users as $user) {
+            $user->profile = $profiles->get($user->id);
+        }
+        
+        return $users;
+    }
+}
+
+// 控制器使用
+class UserController extends Controller
+{
+    public function index(UserService $userService)
+    {
+        // 必须记得使用 service 方法
+        $users = $userService->getUsersWithProfiles([1, 2, 3]);
+        
+        return view('users.index', compact('users'));
+    }
+    
+    public function show($id, UserService $userService)
+    {
+        // 单个用户需要不同的方法
+        $user = $userService->getUserWithProfile($id);
+        
+        return view('users.show', compact('user'));
+    }
+}
+```
+
+**存在的问题：**
+- 🔴 需要单独的 Service 类来获取 API 数据
+- 🔴 控制器必须记得使用特定的 service 方法
+- 🔴 单条和多条记录需要不同的方法
+- 🔴 每个 service 方法都需要手动附加数据
+- 🔴 容易忘记批量加载，导致 N+1 问题
+- 🔴 无法使用 Eloquent 的 `with()` 进行预加载
+- 🔴 打破了 Eloquent 的约定和模式
+
+### 使用后：Laravel API Relations ✅
+
+API 关系就像 Eloquent 关系一样工作：
+
+```php
+// User.php
+class User extends Model
+{
+    use HasApiRelations;
+    
+    public function profile()
+    {
+        return $this->hasOneApi(
+            callback: fn($userIds) => Http::post('https://api.example.com/profiles', [
+                'user_ids' => $userIds
+            ])->json(),
+            foreignKey: 'user_id',
+            localKey: 'id'
+        );
+    }
+    
+    public function posts()
+    {
+        return $this->hasManyApi(
+            callback: fn($userIds) => Http::post('https://api.example.com/posts', [
+                'user_ids' => $userIds
+            ])->json(),
+            foreignKey: 'user_id',
+            localKey: 'id'
+        );
+    }
+}
+
+// 控制器使用 - 就像普通 Eloquent 一样！
+class UserController extends Controller
+{
+    public function index()
+    {
+        // 自动批量加载 - 所有用户只需一次 API 调用
+        $users = User::with('profile', 'posts')->get();
+        
+        return view('users.index', compact('users'));
+    }
+    
+    public function show($id)
+    {
+        // 懒加载 - 无缝工作
+        $user = User::find($id);
+        $profile = $user->profile()->getResults();
+        
+        return view('users.show', compact('user', 'profile'));
+    }
+}
+```
+
+**优势：**
+- ✅ API 关系无需 Service 层
+- ✅ 使用标准的 Eloquent `with()` 进行预加载
+- ✅ 通过智能批处理自动防止 N+1 问题
+- ✅ 与数据库关系保持一致的 API
+- ✅ 单一模型定义适用于所有场景
+- ✅ 控制器保持简洁并遵循 Laravel 约定
+- ✅ 内置复合键支持
+
+---
+
 ## 快速开始
 
 ### 1. 在模型中添加 Trait

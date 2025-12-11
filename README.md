@@ -28,6 +28,145 @@ Install the package via Composer:
 composer require carlin/laravel-api-relations
 ```
 
+## Why This Package?
+
+### Before: The Traditional Approach ❌
+
+Without this package, you typically need Service classes to fetch and attach API data:
+
+```php
+// UserService.php
+class UserService
+{
+    public function getUserWithProfile($userId)
+    {
+        $user = User::find($userId);
+        
+        // Fetch profile from external API
+        $response = Http::post('https://api.example.com/profiles', [
+            'user_ids' => [$userId]
+        ]);
+        $profiles = $response->json();
+        $user->profile = $profiles[0] ?? null;
+        
+        return $user;
+    }
+    
+    public function getUsersWithProfiles($userIds)
+    {
+        $users = User::whereIn('id', $userIds)->get();
+        
+        // Batch fetch to avoid N+1
+        $response = Http::post('https://api.example.com/profiles', [
+            'user_ids' => $userIds
+        ]);
+        $profiles = collect($response->json())->keyBy('user_id');
+        
+        // Manually attach profiles to users
+        foreach ($users as $user) {
+            $user->profile = $profiles->get($user->id);
+        }
+        
+        return $users;
+    }
+}
+
+// Controller usage
+class UserController extends Controller
+{
+    public function index(UserService $userService)
+    {
+        // Must remember to use the service method
+        $users = $userService->getUsersWithProfiles([1, 2, 3]);
+        
+        return view('users.index', compact('users'));
+    }
+    
+    public function show($id, UserService $userService)
+    {
+        // Different method for single user
+        $user = $userService->getUserWithProfile($id);
+        
+        return view('users.show', compact('user'));
+    }
+}
+```
+
+**Problems:**
+- 🔴 Need separate Service classes for API data fetching
+- 🔴 Controllers must remember to use specific service methods
+- 🔴 Different methods for single vs. multiple records
+- 🔴 Manual data attachment in every service method
+- 🔴 Easy to forget batch loading, causing N+1 problems
+- 🔴 Can't use Eloquent's `with()` for eager loading
+- 🔴 Breaking Eloquent conventions and patterns
+
+### After: With Laravel API Relations ✅
+
+API relationships work exactly like Eloquent relationships:
+
+```php
+// User.php
+class User extends Model
+{
+    use HasApiRelations;
+    
+    public function profile()
+    {
+        return $this->hasOneApi(
+            callback: fn($userIds) => Http::post('https://api.example.com/profiles', [
+                'user_ids' => $userIds
+            ])->json(),
+            foreignKey: 'user_id',
+            localKey: 'id'
+        );
+    }
+    
+    public function posts()
+    {
+        return $this->hasManyApi(
+            callback: fn($userIds) => Http::post('https://api.example.com/posts', [
+                'user_ids' => $userIds
+            ])->json(),
+            foreignKey: 'user_id',
+            localKey: 'id'
+        );
+    }
+}
+
+// Controller usage - just like regular Eloquent!
+class UserController extends Controller
+{
+    public function index()
+    {
+        // Automatic batch loading - single API call for all users
+        $users = User::with('profile', 'posts')->get();
+        
+        return view('users.index', compact('users'));
+    }
+    
+    public function show($id)
+    {
+        // Lazy loading - works seamlessly
+        $user = User::find($id);
+        $profile = $user->profile()->getResults();
+        
+        return view('users.show', compact('user', 'profile'));
+    }
+}
+```
+
+**Benefits:**
+- ✅ No service layer needed for API relationships
+- ✅ Use standard Eloquent `with()` for eager loading
+- ✅ Automatic N+1 prevention through intelligent batching
+- ✅ Consistent API with database relationships
+- ✅ Single model definition works for all scenarios
+- ✅ Controllers stay clean and follow Laravel conventions
+- ✅ Built-in composite key support
+
+---
+
 ## Quick Start
 
 ### 1. Add the Trait to Your Model
