@@ -30,15 +30,22 @@ abstract class BaseApiRelation extends Relation
      */
     protected $apiCallback;
 
+    /**
+     * Whether to perform case-insensitive key matching
+     */
+    protected bool $caseInsensitive = false;
+
     public function __construct(
         Model $parent,
         string|array $foreignKey,
         string|array $localKey,
-        ?callable $apiCallback = null
+        ?callable $apiCallback = null,
+        bool $caseInsensitive = false
     ) {
         $this->foreignKey = $foreignKey;
         $this->localKey = $localKey;
         $this->apiCallback = $apiCallback;
+        $this->caseInsensitive = $caseInsensitive;
 
         // Query builder not needed, use an empty Query Builder
         parent::__construct($parent->newQuery(), $parent);
@@ -89,9 +96,19 @@ abstract class BaseApiRelation extends Relation
      */
     protected function makeDictionaryKey($keyValue): string
     {
-		return is_array($keyValue)
-			? md5(serialize($keyValue))
-			: (string)$keyValue;
+        if (is_array($keyValue)) {
+            // For composite keys, normalize each value if case-insensitive
+            $normalized = $this->caseInsensitive 
+                ? array_map(fn($v) => is_string($v) ? strtolower($v) : $v, $keyValue)
+                : $keyValue;
+            return md5(serialize($normalized));
+        }
+        
+        // For single keys, normalize if case-insensitive
+        $normalized = ($this->caseInsensitive && is_string($keyValue)) 
+            ? strtolower($keyValue) 
+            : $keyValue;
+        return (string)$normalized;
     }
 
     /**

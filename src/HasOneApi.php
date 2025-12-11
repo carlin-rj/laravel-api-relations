@@ -26,7 +26,9 @@ class HasOneApi extends BaseApiRelation
 				return [$this->makeDictionaryKey($key) => $item];
 			})->toArray();
 		} else {
-			$dictionary = collect($apiResults)->keyBy($this->foreignKey)->toArray();
+			$dictionary = collect($apiResults)->mapWithKeys(function($item) {
+				return [$this->makeDictionaryKey($item[$this->foreignKey] ?? null) => $item];
+			})->toArray();
 		}
 
 		return $dictionary[$this->makeDictionaryKey($localKeyValue)] ?? null;
@@ -54,7 +56,9 @@ class HasOneApi extends BaseApiRelation
 				return [$this->makeDictionaryKey($key) => $item];
 			})->toArray();
 		} else {
-			$dictionary = collect($apiResults)->keyBy($this->foreignKey)->toArray();
+			$dictionary = collect($apiResults)->mapWithKeys(function($item) {
+				return [$this->makeDictionaryKey($item[$this->foreignKey] ?? null) => $item];
+			})->toArray();
 		}
 
 		// Match results to corresponding models

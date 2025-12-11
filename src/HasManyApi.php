@@ -35,7 +35,9 @@ class HasManyApi extends BaseApiRelation
 				return $this->makeDictionaryKey($key);
 			})->toArray();
 		} else {
-			$dictionary = collect($apiResults)->groupBy($this->foreignKey)->toArray();
+			$dictionary = collect($apiResults)->groupBy(function($item) {
+				return $this->makeDictionaryKey($item[$this->foreignKey] ?? null);
+			})->toArray();
 		}
 
 		return $dictionary[$this->makeDictionaryKey($localKeyValue)] ?? [];
@@ -63,7 +65,9 @@ class HasManyApi extends BaseApiRelation
 				return $this->makeDictionaryKey($key);
 			})->toArray();
 		} else {
-			$dictionary = collect($apiResults)->groupBy($this->foreignKey)->toArray();
+			$dictionary = collect($apiResults)->groupBy(function($item) {
+				return $this->makeDictionaryKey($item[$this->foreignKey] ?? null);
+			})->toArray();
 		}
 
 		// Match results to corresponding models
