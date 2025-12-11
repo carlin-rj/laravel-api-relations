@@ -14,6 +14,7 @@ English | [简体中文](README_CN.md)
 - 🔑 **Composite key support** - Handle complex relationships with multiple keys
 - ⚡ **N+1 prevention** - Automatic batch loading for optimal performance
 - 🎯 **Lazy & Eager loading** - Full support for both loading strategies
+- 🔤 **Case-insensitive matching** - Optional case-insensitive key matching for flexible API integration
 
 ## Requirements
 
@@ -241,6 +242,39 @@ foreach ($users as $user) {
 
 ## Advanced Usage
 
+### Case-Insensitive Key Matching
+
+By default, key matching is case-sensitive. You can enable case-insensitive matching for scenarios where API keys might have inconsistent casing:
+
+```php
+class User extends Model
+{
+    use HasApiRelations;
+    
+    public function profile()
+    {
+        return $this->hasOneApi(
+            callback: fn($userIds) => Http::post('https://api.example.com/profiles', [
+                'user_ids' => $userIds
+            ])->json(),
+            foreignKey: 'user_id',
+            localKey: 'id',
+            caseInsensitive: true  // Enable case-insensitive matching
+        );
+    }
+}
+
+// Example: Model has user_code = 'ABC'
+// API returns data with user_code = 'abc' or 'Abc' or 'ABC'
+// All variations will match successfully
+```
+
+**When to use case-insensitive matching:**
+- External APIs return inconsistent key casing
+- Legacy systems with mixed-case identifiers
+- Case-insensitive database collations
+- Multi-source data integration
+
 ### Composite Keys
 
 Handle relationships with multiple key fields:
@@ -338,7 +372,8 @@ Define a has-one API relationship.
 public function hasOneApi(
     callable $apiCallback,
     string|array $foreignKey,
-    string|array $localKey = 'id'
+    string|array $localKey = 'id',
+    bool $caseInsensitive = false
 ): HasOneApi
 ```
 
@@ -346,6 +381,7 @@ public function hasOneApi(
 - `$apiCallback` - Function that receives array of keys and returns API results
 - `$foreignKey` - Field name(s) in the API response to match against
 - `$localKey` - Field name(s) in the local model (defaults to 'id')
+- `$caseInsensitive` - Enable case-insensitive key matching (defaults to false)
 
 **Returns:** `null` or array when no match found
 
@@ -357,7 +393,8 @@ Define a has-many API relationship.
 public function hasManyApi(
     callable $apiCallback,
     string|array $foreignKey,
-    string|array $localKey = 'id'
+    string|array $localKey = 'id',
+    bool $caseInsensitive = false
 ): HasManyApi
 ```
 
@@ -365,6 +402,7 @@ public function hasManyApi(
 - `$apiCallback` - Function that receives array of keys and returns API results
 - `$foreignKey` - Field name(s) in the API response to match against
 - `$localKey` - Field name(s) in the local model (defaults to 'id')
+- `$caseInsensitive` - Enable case-insensitive key matching (defaults to false)
 
 **Returns:** Empty array `[]` when no matches found
 

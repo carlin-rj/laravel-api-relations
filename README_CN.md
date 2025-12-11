@@ -14,6 +14,7 @@
 - 🔑 **复合键支持** - 处理具有多个键的复杂关系
 - ⚡ **防止 N+1 问题** - 自动批量加载以获得最佳性能
 - 🎯 **懒加载与预加载** - 完全支持两种加载策略
+- 🔤 **不区分大小写匹配** - 可选的不区分大小写键匹配，实现灵活的 API 集成
 
 ## 环境要求
 
@@ -241,6 +242,39 @@ foreach ($users as $user) {
 
 ## 高级用法
 
+### 不区分大小写键匹配
+
+默认情况下，键匹配是区分大小写的。当 API 键值可能存在不一致的大小写时，可以启用不区分大小写匹配：
+
+```php
+class User extends Model
+{
+    use HasApiRelations;
+    
+    public function profile()
+    {
+        return $this->hasOneApi(
+            callback: fn($userIds) => Http::post('https://api.example.com/profiles', [
+                'user_ids' => $userIds
+            ])->json(),
+            foreignKey: 'user_id',
+            localKey: 'id',
+            caseInsensitive: true  // 启用不区分大小写匹配
+        );
+    }
+}
+
+// 示例：模型有 user_code = 'ABC'
+// API 返回的数据中 user_code = 'abc' 或 'Abc' 或 'ABC'
+// 所有变体都能成功匹配
+```
+
+**何时使用不区分大小写匹配：**
+- 外部 API 返回不一致的键大小写
+- 传统系统使用混合大小写标识符
+- 不区分大小写的数据库排序规则
+- 多源数据集成
+
 ### 复合键
 
 处理具有多个键字段的关系：
@@ -338,7 +372,8 @@ foreach ($users as $user) {
 public function hasOneApi(
     callable $apiCallback,
     string|array $foreignKey,
-    string|array $localKey = 'id'
+    string|array $localKey = 'id',
+    bool $caseInsensitive = false
 ): HasOneApi
 ```
 
@@ -346,6 +381,7 @@ public function hasOneApi(
 - `$apiCallback` - 接收键数组并返回 API 结果的函数
 - `$foreignKey` - API 响应中要匹配的字段名
 - `$localKey` - 本地模型中的字段名（默认为 'id'）
+- `$caseInsensitive` - 启用不区分大小写键匹配（默认为 false）
 
 **返回值：** 未找到匹配时返回 `null` 或数组
 
@@ -357,7 +393,8 @@ public function hasOneApi(
 public function hasManyApi(
     callable $apiCallback,
     string|array $foreignKey,
-    string|array $localKey = 'id'
+    string|array $localKey = 'id',
+    bool $caseInsensitive = false
 ): HasManyApi
 ```
 
@@ -365,6 +402,7 @@ public function hasManyApi(
 - `$apiCallback` - 接收键数组并返回 API 结果的函数
 - `$foreignKey` - API 响应中要匹配的字段名
 - `$localKey` - 本地模型中的字段名（默认为 'id'）
+- `$caseInsensitive` - 启用不区分大小写键匹配（默认为 false）
 
 **返回值：** 未找到匹配时返回空数组 `[]`
 
