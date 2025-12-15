@@ -98,15 +98,15 @@ abstract class BaseApiRelation extends Relation
     {
         if (is_array($keyValue)) {
             // For composite keys, normalize each value if case-insensitive
-            $normalized = $this->caseInsensitive 
+            $normalized = $this->caseInsensitive
                 ? array_map(fn($v) => is_string($v) ? strtolower($v) : $v, $keyValue)
                 : $keyValue;
             return md5(serialize($normalized));
         }
-        
+
         // For single keys, normalize if case-insensitive
-        $normalized = ($this->caseInsensitive && is_string($keyValue)) 
-            ? strtolower($keyValue) 
+        $normalized = ($this->caseInsensitive && is_string($keyValue))
+            ? strtolower($keyValue)
             : $keyValue;
         return (string)$normalized;
     }
@@ -145,7 +145,7 @@ abstract class BaseApiRelation extends Relation
         if ($this->apiCallback === null) {
             throw new \RuntimeException('API callback is not defined');
         }
-        return call_user_func($this->apiCallback, $localKeyValues, $this->foreignKey);
+        return call_user_func($this->apiCallback, $localKeyValues, $this->parent);
     }
 
     /**

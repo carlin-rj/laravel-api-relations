@@ -16,9 +16,9 @@ class BaseApiRelationTest extends TestCase
     public function testMakeDictionaryKeyWithString(): void
     {
         $relation = $this->createTestRelation();
-        
+
         $key = $this->invokeProtectedMethod($relation, 'makeDictionaryKey', ['test-key']);
-        
+
         $this->assertEquals('test-key', $key);
     }
 
@@ -28,9 +28,9 @@ class BaseApiRelationTest extends TestCase
     public function testMakeDictionaryKeyWithInteger(): void
     {
         $relation = $this->createTestRelation();
-        
+
         $key = $this->invokeProtectedMethod($relation, 'makeDictionaryKey', [123]);
-        
+
         $this->assertEquals('123', $key);
     }
 
@@ -40,14 +40,14 @@ class BaseApiRelationTest extends TestCase
     public function testMakeDictionaryKeyWithArray(): void
     {
         $relation = $this->createTestRelation();
-        
+
         $compositeKey = ['customer_id' => 2, 'seller_id' => 100];
         $key1 = $this->invokeProtectedMethod($relation, 'makeDictionaryKey', [$compositeKey]);
-        
+
         // Same composite key should produce same hash
         $key2 = $this->invokeProtectedMethod($relation, 'makeDictionaryKey', [$compositeKey]);
         $this->assertEquals($key1, $key2);
-        
+
         // Different composite key should produce different hash
         $differentKey = ['customer_id' => 3, 'seller_id' => 101];
         $key3 = $this->invokeProtectedMethod($relation, 'makeDictionaryKey', [$differentKey]);
@@ -61,13 +61,13 @@ class BaseApiRelationTest extends TestCase
     {
         $relation = $this->createTestRelation();
         $model = $this->createParentModel(['customer_id' => 2, 'seller_id' => 100]);
-        
+
         $result = $this->invokeProtectedMethod(
-            $relation, 
-            'getCompositeKeyValue', 
+            $relation,
+            'getCompositeKeyValue',
             [$model, ['customer_id', 'seller_id']]
         );
-        
+
         $this->assertEquals(['customer_id' => 2, 'seller_id' => 100], $result);
     }
 
@@ -78,13 +78,13 @@ class BaseApiRelationTest extends TestCase
     {
         $relation = $this->createTestRelation();
         $model = $this->createParentModel(['customer_id' => 2, 'seller_id' => null]);
-        
+
         $result = $this->invokeProtectedMethod(
-            $relation, 
-            'getCompositeKeyValue', 
+            $relation,
+            'getCompositeKeyValue',
             [$model, ['customer_id', 'seller_id']]
         );
-        
+
         $this->assertNull($result);
     }
 
@@ -95,13 +95,13 @@ class BaseApiRelationTest extends TestCase
     {
         $relation = $this->createTestRelation();
         $data = ['customer_id' => 2, 'seller_id' => 100, 'amount' => 500];
-        
+
         $result = $this->invokeProtectedMethod(
-            $relation, 
-            'getCompositeKeyValueFromData', 
+            $relation,
+            'getCompositeKeyValueFromData',
             [$data, ['customer_id', 'seller_id']]
         );
-        
+
         $this->assertEquals(['customer_id' => 2, 'seller_id' => 100], $result);
     }
 
@@ -112,13 +112,13 @@ class BaseApiRelationTest extends TestCase
     {
         $relation = $this->createTestRelation();
         $data = ['customer_id' => 2, 'amount' => 500];
-        
+
         $result = $this->invokeProtectedMethod(
-            $relation, 
-            'getCompositeKeyValueFromData', 
+            $relation,
+            'getCompositeKeyValueFromData',
             [$data, ['customer_id', 'seller_id']]
         );
-        
+
         $this->assertNull($result);
     }
 
@@ -133,9 +133,9 @@ class BaseApiRelationTest extends TestCase
             $this->createParentModel(['id' => 2]),
             $this->createParentModel(['id' => 3]),
         ];
-        
+
         $keys = $this->invokeProtectedMethod($relation, 'getKeys', [$models, 'id']);
-        
+
         $this->assertEquals([1, 2, 3], $keys);
     }
 
@@ -150,9 +150,9 @@ class BaseApiRelationTest extends TestCase
             $this->createParentModel(['id' => null]),
             $this->createParentModel(['id' => 3]),
         ];
-        
+
         $keys = $this->invokeProtectedMethod($relation, 'getKeys', [$models, 'id']);
-        
+
         $this->assertEquals([1, 3], $keys);
     }
 
@@ -168,9 +168,9 @@ class BaseApiRelationTest extends TestCase
             $this->createParentModel(['id' => 1]), // duplicate
             $this->createParentModel(['id' => 2]), // duplicate
         ];
-        
+
         $keys = $this->invokeProtectedMethod($relation, 'getKeys', [$models, 'id']);
-        
+
         $this->assertEquals([1, 2], $keys);
     }
 
@@ -184,13 +184,13 @@ class BaseApiRelationTest extends TestCase
             $this->createParentModel(['customer_id' => 2, 'seller_id' => 100]),
             $this->createParentModel(['customer_id' => 3, 'seller_id' => 101]),
         ];
-        
+
         $keys = $this->invokeProtectedMethod(
-            $relation, 
-            'getKeys', 
+            $relation,
+            'getKeys',
             [$models, ['customer_id', 'seller_id']]
         );
-        
+
         $this->assertCount(2, $keys);
         $this->assertEquals(['customer_id' => 2, 'seller_id' => 100], $keys[0]);
         $this->assertEquals(['customer_id' => 3, 'seller_id' => 101], $keys[1]);
@@ -207,13 +207,13 @@ class BaseApiRelationTest extends TestCase
             $this->createParentModel(['customer_id' => 3, 'seller_id' => null]), // has null
             $this->createParentModel(['customer_id' => 4, 'seller_id' => 102]),
         ];
-        
+
         $keys = $this->invokeProtectedMethod(
-            $relation, 
-            'getKeys', 
+            $relation,
+            'getKeys',
             [$models, ['customer_id', 'seller_id']]
         );
-        
+
         $this->assertCount(2, $keys);
         $this->assertEquals(['customer_id' => 2, 'seller_id' => 100], $keys[0]);
         $this->assertEquals(['customer_id' => 4, 'seller_id' => 102], $keys[1]);
@@ -229,9 +229,9 @@ class BaseApiRelationTest extends TestCase
             $this->createParentModel(['id' => 1]),
             $this->createParentModel(['id' => 2]),
         ];
-        
+
         $result = $relation->initRelation($models, 'testRelation');
-        
+
         $this->assertCount(2, $result);
         $this->assertNull($result[0]->getRelation('testRelation'));
         $this->assertNull($result[1]->getRelation('testRelation'));
@@ -243,10 +243,10 @@ class BaseApiRelationTest extends TestCase
     public function testAddConstraintsDoesNothing(): void
     {
         $relation = $this->createTestRelation();
-        
+
         // Should not throw any exception
         $relation->addConstraints();
-        
+
         $this->assertTrue(true);
     }
 
@@ -259,10 +259,10 @@ class BaseApiRelationTest extends TestCase
         $models = [
             $this->createParentModel(['id' => 1]),
         ];
-        
+
         // Should not throw any exception
         $relation->addEagerConstraints($models);
-        
+
         $this->assertTrue(true);
     }
 
@@ -273,10 +273,10 @@ class BaseApiRelationTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('API callback is not defined');
-        
+
         $parent = $this->createParentModel(['id' => 1]);
         $relation = new TestApiRelation($parent, 'foreign_key', 'id', null);
-        
+
         $this->invokeProtectedMethod($relation, 'executeApiCallback', [[1]]);
     }
 
@@ -285,19 +285,20 @@ class BaseApiRelationTest extends TestCase
      */
     public function testExecuteApiCallbackCallsCallback(): void
     {
-        $called = false;
-        $apiCallback = function (array $keys, $foreignKey) use (&$called) {
+		$parent = $this->createParentModel(['id' => 1]);
+
+		$called = false;
+        $apiCallback = function (array $keys, $model) use ($parent, &$called) {
             $called = true;
             $this->assertEquals([1, 2, 3], $keys);
-            $this->assertEquals('foreign_key', $foreignKey);
+            $this->assertEquals($parent, $model);
             return ['result'];
         };
-        
-        $parent = $this->createParentModel(['id' => 1]);
+
         $relation = new TestApiRelation($parent, 'foreign_key', 'id', $apiCallback);
-        
+
         $result = $this->invokeProtectedMethod($relation, 'executeApiCallback', [[1, 2, 3]]);
-        
+
         $this->assertTrue($called);
         $this->assertEquals(['result'], $result);
     }
@@ -320,11 +321,11 @@ class BaseApiRelationTest extends TestCase
             protected $guarded = [];
             public $timestamps = false;
         };
-        
+
         foreach ($attributes as $key => $value) {
             $model->setAttribute($key, $value);
         }
-        
+
         return $model;
     }
 
@@ -336,7 +337,7 @@ class BaseApiRelationTest extends TestCase
         $reflection = new \ReflectionClass(get_class($object));
         $method = $reflection->getMethod($methodName);
         $method->setAccessible(true);
-        
+
         return $method->invokeArgs($object, $parameters);
     }
 }
